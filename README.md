@@ -39,15 +39,15 @@ A NAV-based fund tokenization system that wraps real-world assets (e.g., gold, b
 - **NAV Oracle**: Continuous APR-based price accrual
 - **Share Token**: ERC20-compliant fund shares with mint/redeem
 - **Asset Vault**: Secure custody with settlement operations
-- **Compliance**: Built-in whitelist and two-step redemption approval
+- **Compliance**: Built-in whitelist, two-step redemption approval, and optional on-chain sanctions screening via pluggable `ISanctionsOracle`
 
 ### Logic Contracts
 
 | Sepolia Testnet Contract         | Address                                                               |
 |------------------|-----------------------------------------------------------------------|
 | Oracle Logic     | [`0x0CEc310611866849fe07759f3635EB8D39BbA8ea`](https://sepolia.etherscan.io/address/0x0CEc310611866849fe07759f3635EB8D39BbA8ea) |
-| FundToken Logic  | [`0xc12746bD6DC4dA88944f366f55D63960edaB83CB`](https://sepolia.etherscan.io/address/0xc12746bD6DC4dA88944f366f55D63960edaB83CB) |
-| Vault Logic      | [`0x60263ba36aFD3824cE3E8231d5439E542b48C617`](https://sepolia.etherscan.io/address/0x60263ba36aFD3824cE3E8231d5439E542b48C617) |
+| FundToken Logic  | [`0xAc5021d88e8003D30CCE6b089A3982060907a917`](https://sepolia.etherscan.io/address/0xAc5021d88e8003D30CCE6b089A3982060907a917) |
+| Vault Logic      | [`0x7D89fD39EE0d40b3024814B8874df710f1edeA00`](https://sepolia.etherscan.io/address/0x7D89fD39EE0d40b3024814B8874df710f1edeA00) |
 
 | Ethereum Contract         | Address                                                               |
 |------------------|-----------------------------------------------------------------------|

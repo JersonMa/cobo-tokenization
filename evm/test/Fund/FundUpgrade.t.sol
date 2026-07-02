@@ -602,6 +602,32 @@ contract FundUpgradeTest is FundTestBase {
         );
     }
 
+    /// @dev UPG-Sanctions: sanctionsOracle state persists across upgrade.
+    ///      Verifies the new sanctions storage slot is preserved after upgrading the FundToken
+    ///      implementation, and that screening continues to enforce post-upgrade.
+    function test_UPG_sanctionsOraclePersistsAcrossUpgrade() public {
+        // Sanction user2 before upgrade.
+        sanctionsOracle.setSanctioned(user2, true);
+        address oracleAddrBefore = address(fundToken.sanctionsOracle());
+        assertEq(oracleAddrBefore, address(sanctionsOracle), "sanctionsOracle pre-upgrade");
+
+        // Upgrade FundToken to V2.
+        vm.prank(upgrader);
+        UUPSUpgradeable(address(fundToken)).upgradeToAndCall(address(fundTokenV2Impl), bytes(""));
+
+        // sanctionsOracle slot survives — same address, same enforcement.
+        assertEq(address(fundToken.sanctionsOracle()), oracleAddrBefore, "sanctionsOracle post-upgrade");
+
+        vm.prank(user2);
+        vm.expectRevert(abi.encodeWithSelector(LibFundErrors.AddressSanctioned.selector, user2));
+        fundToken.mint(MIN_DEPOSIT_AMOUNT);
+
+        // V2 new variable still works in the slot following sanctionsOracle.
+        CoboFundTokenV2 fundTokenV2 = CoboFundTokenV2(address(fundToken));
+        fundTokenV2.setNewVariable(42);
+        assertEq(fundTokenV2.newVariable(), 42, "V2 newVariable broken");
+    }
+
     /// @dev UPG-6: Three contracts independently upgradeable.
     ///      Upgrade NavOracle -> then Nav4626 -> then Vault.
     ///      Perform operations between each upgrade to verify system integrity.

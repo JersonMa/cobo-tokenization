@@ -11,11 +11,16 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {LibFundErrors} from "./libraries/LibFundErrors.sol";
+import {ISanctionsOracle} from "./interfaces/ISanctionsOracle.sol";
 
 /// @notice Minimal interface for FundToken consumers.
 interface ICoboFundToken {
     /// @notice Returns whether the system is paused.
     function paused() external view returns (bool);
+
+    /// @notice Returns the configured sanctions screening oracle.
+    /// @dev Vault reads this so sanctions configuration lives in a single place (FundToken).
+    function sanctionsOracle() external view returns (ISanctionsOracle);
 }
 
 /// @title CoboFundVault - Asset custody vault for tokenized funds.
@@ -98,6 +103,8 @@ contract CoboFundVault is
     // ─── Asset Transfer (SETTLEMENT_OPERATOR_ROLE only) ─────────────────
 
     /// @notice Withdraw asset to a whitelisted address.
+    /// @dev Sanctions screening uses the oracle configured on FundToken (single source of truth).
+    ///      If FundToken's `sanctionsOracle` is unset (emergency disable), screening is bypassed.
     /// @param to Recipient address (must be in settlement whitelist).
     /// @param amount Amount of asset to transfer (asset token decimals).
     function withdraw(address to, uint256 amount) external onlyRole(SETTLEMENT_OPERATOR_ROLE) nonReentrant {
@@ -105,6 +112,11 @@ contract CoboFundVault is
         if (amount == 0) revert LibFundErrors.ZeroAmount();
         if (!whitelist[to]) revert LibFundErrors.NotInVaultWhitelist(to);
         if (fundToken.paused()) revert LibFundErrors.SystemPaused();
+
+        ISanctionsOracle oracle_ = fundToken.sanctionsOracle();
+        if (address(oracle_) != address(0) && oracle_.isSanctioned(to)) {
+            revert LibFundErrors.AddressSanctioned(to);
+        }
 
         asset.safeTransfer(to, amount);
         emit Withdrawn(to, amount, msg.sender);

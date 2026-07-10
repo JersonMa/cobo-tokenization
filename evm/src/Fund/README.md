@@ -9,8 +9,10 @@ Three-contract system with upgradeable proxy pattern:
 ```
 src/Fund/
 ├── CoboFundOracle.sol              # NAV oracle with continuous APR accrual (exports ICoboFundOracle)
-├── CoboFundToken.sol               # ERC20 share token (mint/redeem/forceRedeem)
+├── CoboFundToken.sol               # ERC20 share token (mint/redeem/forceRedeem) + sanctions screening config
 ├── CoboFundVault.sol               # Asset custody vault with settlement (exports ICoboFundToken)
+├── interfaces/
+│   └── ISanctionsOracle.sol        # Sanctions screening interface (single-method, backend-agnostic)
 └── libraries/
     └── LibFundErrors.sol           # Centralized custom errors
 ```
@@ -29,6 +31,31 @@ src/Fund/
 NAV(t) = baseNetValue + baseNetValue * currentAPR * (t - lastUpdateTimestamp) / (365 days * 1e18)
 ```
 
+### Sanctions Screening
+
+Optional on-chain compliance screening via a pluggable `ISanctionsOracle` interface (single method `isSanctioned(address) -> bool`). Any backend the operator chooses can plug in — third-party oracle, aggregator, internal blacklist.
+
+Configuration lives on `CoboFundToken.sanctionsOracle`; `CoboFundVault` reads it via `ICoboFundToken` so configuration has a single source of truth. Setting the oracle to `address(0)` disables screening (behavior reverts to a pre-screening fund).
+
+Enforcement points:
+
+| Path | Subject |
+|------|---------|
+| `mint` | `msg.sender` |
+| `requestRedemption` | `msg.sender` |
+| `approveRedemption` | stored `user` |
+| `rejectRedemption` | stored `user` |
+| `transfer` / `transferFrom` | `from` + `to` |
+| `Vault.withdraw` | `to` |
+
+Bypass paths (admin-only, intentional):
+- `forceRedeem` — burns a sanctioned holder's share balance. Compliance disposal tool, not subject to screening.
+- `adminForfeitPending` — clears a pending redemption that cannot be approved or rejected (user listed between request and settlement).
+
+Operational controls (admin-only):
+- `setSanctionsOracle(addr)` — install or replace the oracle.
+- `setSanctionsOracle(address(0))` — emergency disable.
+
 ## Testing
 
 ```bash
@@ -46,6 +73,7 @@ Test files:
 - `FundIntegration.t.sol` — Cross-contract integration
 - `FundNumerical.t.sol` — Precision and boundary
 - `FundSecurity.t.sol` — Attack scenarios
+- `FundSanctions.t.sol` — Sanctions screening enforcement and emergency controls
 - `FundFuzz.t.sol` — Fuzz and invariant
 - `FundUpgrade.t.sol` — UUPS upgrade
 
@@ -101,6 +129,10 @@ export NAV_UPDATER=0x...
 export MANAGER=0x...
 export REDEMPTION_APPROVER=0x...
 export SETTLEMENT_OPERATOR=0x...
+
+# Optional: sanctions screening oracle (any ISanctionsOracle-compatible contract).
+# Unset = skip; admin can install later via setSanctionsOracle.
+# export SANCTIONS_ORACLE=0x...
 ```
 
 ### Step 4: Deploy product proxy
@@ -119,6 +151,8 @@ export VAULT_PROXY=0x...
 ```bash
 forge script script/PostDeployConfig.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast
 ```
+
+Grants roles from Step 3 to their respective addresses and installs the sanctions oracle if `SANCTIONS_ORACLE` is set (optional).
 
 **To deploy additional products**: Repeat Steps 3-5 with different parameters (e.g., TOKEN_SYMBOL="XBTC").
 

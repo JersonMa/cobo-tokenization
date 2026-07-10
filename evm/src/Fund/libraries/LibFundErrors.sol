@@ -32,6 +32,10 @@ library LibFundErrors {
     error SystemPaused();
     error NotInVaultWhitelist(address to);
 
+    // ──────────────────── Sanctions ──────────────────
+    error AddressSanctioned(address account);
+    error InvalidSanctionsOracle(address oracle);
+
     // ──────────────────── AccessControl ─────────────
     error LastAdminCannotBeRevoked();
 }

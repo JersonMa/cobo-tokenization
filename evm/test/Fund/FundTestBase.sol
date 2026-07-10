@@ -11,6 +11,7 @@ import {CoboFundVault} from "../../src/Fund/CoboFundVault.sol";
 import {LibFundErrors} from "../../src/Fund/libraries/LibFundErrors.sol";
 
 import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockSanctionsOracle} from "./mocks/MockSanctionsOracle.sol";
 
 /// @dev Base test contract with full deployment setup for all Fund contracts.
 abstract contract FundTestBase is Test {
@@ -19,6 +20,7 @@ abstract contract FundTestBase is Test {
     CoboFundOracle public oracle;
     CoboFundToken public fundToken;
     CoboFundVault public vault;
+    MockSanctionsOracle public sanctionsOracle;
 
     // Logic implementations (for upgrade tests)
     CoboFundOracle public oracleImpl;
@@ -62,6 +64,9 @@ abstract contract FundTestBase is Test {
     function setUp() public virtual {
         // Deploy mock asset token
         asset = new MockERC20("Mock Asset Token", "ASSET", ASSET_DECIMALS);
+
+        // Deploy sanctions oracle mock (no addresses sanctioned by default)
+        sanctionsOracle = new MockSanctionsOracle();
 
         // Deploy logic implementations
         oracleImpl = new CoboFundOracle();
@@ -151,6 +156,9 @@ abstract contract FundTestBase is Test {
         // Whitelist vault targets
         vault.setWhitelist(user1, true);
         vault.setWhitelist(user2, true);
+
+        // Configure sanctions oracle on FundToken (Vault reads it from here)
+        fundToken.setSanctionsOracle(address(sanctionsOracle));
 
         vm.stopPrank();
 

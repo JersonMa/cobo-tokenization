@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Script, console2 as console} from "forge-std/Script.sol";
-import {CoboFundOracle} from "../src/Fund/CoboFundOracle.sol";
-import {CoboFundToken} from "../src/Fund/CoboFundToken.sol";
-import {CoboFundVault} from "../src/Fund/CoboFundVault.sol";
+import {CoboFundOracle} from "../../src/Fund/CoboFundOracle.sol";
+import {CoboFundToken} from "../../src/Fund/CoboFundToken.sol";
+import {CoboFundVault} from "../../src/Fund/CoboFundVault.sol";
 
 interface IFactory {
     function deploy(uint8 typ, bytes32 salt, bytes memory initCode) external returns (address);

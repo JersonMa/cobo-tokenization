@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Script, console2 as console} from "forge-std/Script.sol";
-import {CoboFundOracle} from "../src/Fund/CoboFundOracle.sol";
-import {CoboFundToken} from "../src/Fund/CoboFundToken.sol";
-import {CoboFundVault} from "../src/Fund/CoboFundVault.sol";
+import {CoboFundOracle} from "../../src/Fund/CoboFundOracle.sol";
+import {CoboFundToken} from "../../src/Fund/CoboFundToken.sol";
+import {CoboFundVault} from "../../src/Fund/CoboFundVault.sol";
 
 /// @title PostDeployConfig - Post-deployment role and whitelist configuration for fund proxies.
 /// @dev Run after DeployFundProxy.s.sol to configure all roles and whitelists per fund deployment checklist.
@@ -26,6 +26,8 @@ import {CoboFundVault} from "../src/Fund/CoboFundVault.sol";
 ///        EMERGENCY_GUARDIAN    - Address for FundToken EMERGENCY_GUARDIAN_ROLE (emergency pause)
 ///        UPGRADER              - Address for UPGRADER_ROLE on all 3 contracts
 ///        SETTLEMENT_TARGETS    - Comma-separated list of Vault settlement whitelist addresses
+///        SANCTIONS_ORACLE      - Address of a contract implementing ISanctionsOracle. Leave unset
+///                                to skip; admin can install later via setSanctionsOracle.
 ///
 ///      Run: forge script script/PostDeployConfig.s.sol --rpc-url $RPC_URL --broadcast
 contract PostDeployConfig is Script {
@@ -51,6 +53,10 @@ contract PostDeployConfig is Script {
         // Parse as a string then split; empty string means no targets.
         string memory settlementTargetsRaw = vm.envOr("SETTLEMENT_TARGETS", string(""));
 
+        // Optional: Sanctions screening oracle (address(0) / unset to skip — operator
+        // can later run setSanctionsOracle from the admin multisig).
+        address sanctionsOracle = vm.envOr("SANCTIONS_ORACLE", address(0));
+
         // ─── Cast proxy addresses to contract interfaces ────────────────
         CoboFundOracle oracle = CoboFundOracle(oracleProxy);
         CoboFundToken fundToken = CoboFundToken(fundTokenProxy);
@@ -70,6 +76,7 @@ contract PostDeployConfig is Script {
         console.log("Settlement Operator:", settlementOperator);
         console.log("Emergency Guardian:", emergencyGuardian);
         console.log("Upgrader:", upgrader);
+        console.log("Sanctions Oracle:", sanctionsOracle);
         console.log("========================================");
 
         vm.startBroadcast();
@@ -125,6 +132,16 @@ contract PostDeployConfig is Script {
             oracle.grantRole(oracle.UPGRADER_ROLE(), upgrader);
             fundToken.grantRole(fundToken.UPGRADER_ROLE(), upgrader);
             vault.grantRole(vault.UPGRADER_ROLE(), upgrader);
+        }
+
+        // ─── Optional: Configure sanctions screening oracle ──────────────
+        // FundToken.sanctionsOracle is the single source of truth; Vault reads it
+        // when enforcing screening on withdraw.
+        if (sanctionsOracle != address(0)) {
+            console.log("[Opt] Configuring sanctions oracle on FundToken...");
+            fundToken.setSanctionsOracle(sanctionsOracle);
+        } else {
+            console.log("[Opt] Sanctions oracle skipped (admin can install later via setSanctionsOracle)");
         }
 
         vm.stopBroadcast();

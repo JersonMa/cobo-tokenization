@@ -3,9 +3,9 @@ pragma solidity ^0.8.20;
 
 import {Script, console2 as console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {CoboFundOracle} from "../src/Fund/CoboFundOracle.sol";
-import {CoboFundToken} from "../src/Fund/CoboFundToken.sol";
-import {CoboFundVault} from "../src/Fund/CoboFundVault.sol";
+import {CoboFundOracle} from "../../src/Fund/CoboFundOracle.sol";
+import {CoboFundToken} from "../../src/Fund/CoboFundToken.sol";
+import {CoboFundVault} from "../../src/Fund/CoboFundVault.sol";
 
 interface IFactory {
     function deploy(uint8 typ, bytes32 salt, bytes memory initCode) external returns (address);
@@ -26,14 +26,14 @@ interface IFactory {
 }
 
 /// @title DeployFundProxyTemplate - Parameterized deployment for multiple RWA funds.
-/// @dev Template mode: can deploy multiple fund instances (SHARE, XBTC, XOil, etc.)
+/// @dev Template mode: can deploy multiple fund instances (one product per fund symbol).
 ///
 ///      Required environment variables:
 ///        ORACLE_LOGIC      - CoboFundOracle logic address
 ///        FUNDTOKEN_LOGIC   - CoboFundToken logic address
 ///        VAULT_LOGIC       - CoboFundVault logic address
 ///        ADMIN             - Admin address (receives DEFAULT_ADMIN_ROLE)
-///        UNDERLYING_TOKEN  - Underlying asset address (ASSET, WBTC, etc.)
+///        UNDERLYING_TOKEN  - Underlying asset address (any ERC20)
 ///
 ///        # Token configuration
 ///        TOKEN_NAME        - e.g., "SHARE Gold Fund"

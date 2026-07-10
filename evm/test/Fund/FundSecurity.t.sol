@@ -8,6 +8,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ICoboFundOracle} from "../../src/Fund/CoboFundOracle.sol";
 import {ICoboFundToken} from "../../src/Fund/CoboFundVault.sol";
+import {ISanctionsOracle} from "../../src/Fund/interfaces/ISanctionsOracle.sol";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Malicious Mock Contracts
@@ -274,6 +275,10 @@ contract ReturnFalseERC20 {
 contract MaliciousNav4626 is ICoboFundToken {
     function paused() external pure override returns (bool) {
         revert("always reverts");
+    }
+
+    function sanctionsOracle() external pure override returns (ISanctionsOracle) {
+        return ISanctionsOracle(address(0));
     }
 }
 

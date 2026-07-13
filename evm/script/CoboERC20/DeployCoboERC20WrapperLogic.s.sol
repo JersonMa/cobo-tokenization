@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2 as console} from "forge-std/Script.sol";
-import {CoboERC20Wrapper} from "../src/CoboERC20/CoboERC20Wrapper.sol";
+import {CoboERC20Wrapper} from "../../src/CoboERC20/CoboERC20Wrapper.sol";
 
 interface IFactory {
     function deploy(uint8 typ, bytes32 salt, bytes memory initCode) external returns (address);

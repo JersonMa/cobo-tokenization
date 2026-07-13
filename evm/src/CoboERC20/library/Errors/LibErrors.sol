@@ -38,4 +38,9 @@ library LibErrors {
      * @dev Indicates a failure because "DEFAULT_ADMIN_ROLE" was tried to be revoked.
      */
     error DefaultAdminError();
+
+    /**
+     * @dev Indicates a failure that an address is on the sanctions list.
+     */
+    error AddressSanctioned(address account);
 }

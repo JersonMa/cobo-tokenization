@@ -68,30 +68,45 @@ contract FundSanctionsTest is FundTestBase {
         fundToken.mint(MIN_DEPOSIT_AMOUNT);
     }
 
-    function test_setSanctionsOracle_rejectsMaliciousOracle() public {
-        // A pathological oracle that returns true for ALL addresses (incl. the token contract
-        // itself) would deadlock every transfer if installed. The setter's sanity check
-        // (isSanctioned(self) must be false) blocks this.
-        MockSanctionsOracle evilOracle = new MockSanctionsOracle();
-        evilOracle.setSanctioned(address(fundToken), true);
+    function test_setSanctionsOracle_installsOracleFlaggingTokenItself() public {
+        // The install probe calls isSanctioned but ignores the result, so an oracle that flags the
+        // token contract itself still installs. The token address is never a screened party on normal
+        // paths, so user mints still work.
+        MockSanctionsOracle o = new MockSanctionsOracle();
+        o.setSanctioned(address(fundToken), true);
 
         vm.prank(admin);
-        vm.expectRevert(
-            abi.encodeWithSelector(LibFundErrors.InvalidSanctionsOracle.selector, address(evilOracle))
-        );
-        fundToken.setSanctionsOracle(address(evilOracle));
+        fundToken.setSanctionsOracle(address(o));
+        assertEq(address(fundToken.sanctionsOracle()), address(o));
 
-        // sanctionsOracle remains the original (set up in FundTestBase).
-        assertEq(address(fundToken.sanctionsOracle()), address(sanctionsOracle));
+        // user1 (not flagged) can still mint.
+        vm.prank(user1);
+        fundToken.mint(MIN_DEPOSIT_AMOUNT);
     }
 
-    function test_setSanctionsOracle_rejectsNonOracleContract() public {
-        // A non-conforming contract (e.g. EOA stub, or contract without isSanctioned) makes the
-        // sanity-check staticcall revert; setter must propagate that failure rather than write
-        // a broken oracle reference.
+    function test_setSanctionsOracle_nonOracleContract_revertsAtInstall() public {
+        // Install-time liveness probe: asset is an ERC20 with no isSanctioned(), so the probe
+        // call reverts and the candidate is rejected at install rather than stored.
         vm.prank(admin);
         vm.expectRevert();
         fundToken.setSanctionsOracle(address(asset)); // asset is an ERC20, has no isSanctioned()
+
+        // The previously configured oracle (from FundTestBase) stays in place.
+        assertEq(address(fundToken.sanctionsOracle()), address(sanctionsOracle));
+    }
+
+    function test_setSanctionsOracle_revertingOracle_revertsAtInstall() public {
+        // A conforming oracle that reverts on any query is rejected at install: the probe propagates
+        // the revert instead of storing a reference that would freeze every screened call.
+        MockSanctionsOracle reverting = new MockSanctionsOracle();
+        reverting.setShouldRevert(true);
+
+        vm.prank(admin);
+        vm.expectRevert();
+        fundToken.setSanctionsOracle(address(reverting));
+
+        // The previously configured oracle (from FundTestBase) stays in place.
+        assertEq(address(fundToken.sanctionsOracle()), address(sanctionsOracle));
     }
 
     function test_setSanctionsOracle_zeroAddress_disablesScreening() public {

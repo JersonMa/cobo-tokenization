@@ -11,10 +11,11 @@ src/Fund/
 ├── CoboFundOracle.sol              # NAV oracle with continuous APR accrual (exports ICoboFundOracle)
 ├── CoboFundToken.sol               # ERC20 share token (mint/redeem/forceRedeem) + sanctions screening config
 ├── CoboFundVault.sol               # Asset custody vault with settlement (exports ICoboFundToken)
-├── interfaces/
-│   └── ISanctionsOracle.sol        # Sanctions screening interface (single-method, backend-agnostic)
 └── libraries/
     └── LibFundErrors.sol           # Centralized custom errors
+
+src/interfaces/
+└── ISanctionsOracle.sol            # Sanctions screening interface (shared across tokenization modules)
 ```
 
 ### Contract Roles
@@ -53,7 +54,7 @@ Bypass paths (admin-only, intentional):
 - `adminForfeitPending` — clears a pending redemption that cannot be approved or rejected (user listed between request and settlement).
 
 Operational controls (admin-only):
-- `setSanctionsOracle(addr)` — install or replace the oracle.
+- `setSanctionsOracle(addr)` — install or replace the oracle. A non-zero candidate is probed once at install (`isSanctioned` called, result ignored), so an EOA or non-conforming address reverts here; a wrong-but-conforming oracle is not caught and must be verified off-chain per the runbook.
 - `setSanctionsOracle(address(0))` — emergency disable.
 
 ## Testing

@@ -16,7 +16,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 import {LibFundErrors} from "./libraries/LibFundErrors.sol";
 import {ICoboFundOracle} from "./CoboFundOracle.sol";
-import {ISanctionsOracle} from "./interfaces/ISanctionsOracle.sol";
+import {ISanctionsOracle} from "../interfaces/ISanctionsOracle.sol";
 
 /// @title CoboFundToken - ERC20 share token for asset-backed funds with NAV-based pricing.
 /// @author Cobo Safe Dev Team https://www.cobo.com/
@@ -520,20 +520,19 @@ contract CoboFundToken is
     /// @dev Pass any contract implementing ISanctionsOracle (the concrete data source is a runtime
     ///      configuration decision — see the operations runbook).
     ///      Pass `address(0)` to disable screening (emergency fallback when the oracle is malfunctioning).
-    ///      A non-zero candidate is validated by a lightweight conformance probe:
-    ///      `isSanctioned(address(this))` must return `false`. The call reverts if the candidate's
-    ///      staticcall reverts (non-conforming interface, no such function, etc.) or if it returns true
-    ///      on this contract's address (clearly broken oracle, since this contract itself cannot be
-    ///      sanctioned by any legitimate list). This is a smoke test for interface and basic sanity,
-    ///      NOT a defense against a malicious oracle that returns true for arbitrary other addresses —
-    ///      that risk is governed by trust in the oracle's deployer and the admin multisig.
+    ///      A non-zero candidate is probed once at install time by calling `isSanctioned`; the call reverts
+    ///      if the candidate is an EOA or does not implement a callable `isSanctioned(address)`, so a
+    ///      mistyped or non-conforming address is rejected here rather than surfacing at the first screened
+    ///      call. The returned value is ignored; the probe verifies only that the interface is reachable.
+    ///      Whether the oracle's answers are correct cannot be checked on-chain and rests on the admin
+    ///      multisig and the operations runbook. Recover with `setSanctionsOracle(address(0))`.
     ///      Monitoring systems detect a disable by filtering `SanctionsOracleUpdated` for `newOracle == 0`.
     /// @param sanctionsOracle_ Address of the new sanctions oracle, or address(0) to disable screening.
     function setSanctionsOracle(address sanctionsOracle_) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (sanctionsOracle_ != address(0)) {
-            if (ISanctionsOracle(sanctionsOracle_).isSanctioned(address(this))) {
-                revert LibFundErrors.InvalidSanctionsOracle(sanctionsOracle_);
-            }
+            // Probe the candidate: reverts if it is an EOA or has no callable isSanctioned(address).
+            // The boolean result is ignored; the call only verifies the interface is reachable.
+            ISanctionsOracle(sanctionsOracle_).isSanctioned(address(this));
         }
         sanctionsOracle = ISanctionsOracle(sanctionsOracle_);
         emit SanctionsOracleUpdated(sanctionsOracle_);

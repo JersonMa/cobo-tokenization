@@ -154,6 +154,45 @@ coboToken.unpause();
 - Granular control over who can send/receive tokens
 - Useful for compliance and regulatory requirements
 
+### Sanctions Screening (on-chain KYC)
+
+A pluggable `sanctionsOracle` (any contract implementing `ISanctionsOracle`, shared at `src/interfaces/`)
+provides automated, dynamic address risk screening — e.g. a Chainalysis oracle, an aggregator, or an
+internal blacklist. It **complements** the manual `BlockList`: the oracle is a dynamic external feed,
+the BlockList remains the manual on-chain override, and both are enforced independently.
+
+Enforcement points (both `CoboERC20` and `CoboERC20Wrapper`):
+
+| Path | Subject |
+|------|---------|
+| `mint` | `to` |
+| `transfer` | `msg.sender` + `to` |
+| `transferFrom` | `msg.sender` + `from` + `to` |
+| `Wrapper.deposit` | `msg.sender` |
+| `Wrapper.withdraw` | `msg.sender` |
+
+Not screened (intentional): `burn` / `burnFrom` are the compliance seizure tools — they must work
+against a sanctioned holder, so they bypass screening (same role gating as before).
+
+Controls:
+- `setSanctionsOracle(addr)` — `DEFAULT_ADMIN_ROLE` sets/replaces the oracle. Gated at the highest privilege (above the `MANAGER_ROLE` that maintains AccessList/BlockList entries) because it can disable all screening at once. A non-zero candidate is probed once at install (`isSanctioned` is called and its result ignored), so an EOA or non-conforming address reverts here instead of surfacing at the first transfer.
+- `setSanctionsOracle(address(0))` — emergency disable (clears the oracle).
+- Oracle unset (`address(0)`) ⇒ screening bypassed. A reverting or non-conforming oracle fails closed on normal paths.
+
+Default is off: after an upgrade the oracle is `address(0)` until `DEFAULT_ADMIN_ROLE` installs one.
+
+**Trust boundary (operational).** The install-time probe only proves the candidate is a live contract
+exposing a callable `isSanctioned(address)`; it deliberately ignores the returned value, so it does NOT
+prove the oracle answers correctly. An on-chain check cannot prove that — it inspects one address at one
+instant, while the oracle is external and mutable. A malicious/buggy oracle that returns `true` for
+arbitrary addresses could freeze or selectively censor transfers. Security therefore rests on the admin
+multisig and the oracle's operator, not on the probe. A reverting or non-conforming oracle is caught at
+install; a wrong-but-conforming oracle is not, and it surfaces at the first screened call, which fails
+closed. Before installing or replacing an oracle, the runbook MUST:
+- confirm the candidate is the expected, audited contract, and whether it is immutable or governance-controlled;
+- off-chain verify it returns `false` for a set of known-clean addresses and `true` for known-sanctioned ones;
+- keep `setSanctionsOracle(address(0))` ready as the emergency escape hatch if an installed oracle misbehaves.
+
 ## ⚙️ Configuration
 
 ### Foundry Configuration

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /// @title ISanctionsOracle - Minimal sanctions screening interface.
-/// @author Cobo Safe Dev Team https://www.cobo.com/
+/// @author Cobo Dev Team https://www.cobo.com/
 /// @notice Single-method interface for on-chain sanctions screening: given an address, return
 ///         whether it should be blocked.
 /// @dev Kept intentionally minimal so the backing implementation can be any of:

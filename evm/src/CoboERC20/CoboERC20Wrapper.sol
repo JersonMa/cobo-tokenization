@@ -15,6 +15,7 @@ import {PauseUpgradeable} from "./library/Utils/PauseUpgradeable.sol";
 import {RoleAccessUpgradeable} from "./library/Utils/RoleAccessUpgradeable.sol";
 import {AccessListUpgradeable} from "./library/Utils/AccessListUpgradeable.sol";
 import {LibErrors} from "./library/Errors/LibErrors.sol";
+import {ISanctionsOracle} from "../interfaces/ISanctionsOracle.sol";
 
 /**
  * @title CoboERC20Wrapper
@@ -109,6 +110,14 @@ contract CoboERC20Wrapper is
     /// @notice The underlying token.
     IERC20 private _underlying;
 
+    /// @notice The sanctions screening oracle. Any contract implementing ISanctionsOracle.
+    /// @dev When set to address(0), sanctions screening is bypassed — used as an emergency
+    ///      fallback when the oracle is malfunctioning. The choice of backing implementation is
+    ///      a runtime configuration decision (via {setSanctionsOracle}), not a compile-time binding.
+    ///      This complements the on-chain {AccessList}/{BlockList}: the oracle is a dynamic,
+    ///      external risk feed (e.g. Chainalysis), while the BlockList remains the manual override.
+    ISanctionsOracle public sanctionsOracle;
+
     /**
      * @dev The underlying token couldn't be wrapped.
      */
@@ -121,6 +130,13 @@ contract CoboERC20Wrapper is
 
     event  Deposit(address indexed account, uint256 value);
     event  Withdrawal(address indexed account, uint256 value);
+
+    /**
+     * @notice This event is logged when the sanctions oracle is set, replaced, or cleared.
+     *
+     * @param newOracle The address of the new sanctions oracle, or address(0) when screening is disabled.
+     */
+    event SanctionsOracleUpdated(address indexed newOracle);
 
     /// Functions
 
@@ -198,6 +214,7 @@ contract CoboERC20Wrapper is
      */
     function mint(address to) external virtual whenNotPaused onlyRole(MINTER_ROLE) {
         _requireAccess(to);
+        _requireNotSanctioned(to);
         _recover(to);
     }
 
@@ -221,6 +238,8 @@ contract CoboERC20Wrapper is
     function transfer(address to, uint256 amount) public virtual override whenNotPaused returns (bool) {
         _requireAccess(_msgSender());
         _requireAccess(to);
+        _requireNotSanctioned(_msgSender());
+        _requireNotSanctioned(to);
 
         return super.transfer(to, amount);
     }
@@ -255,6 +274,11 @@ contract CoboERC20Wrapper is
         _requireAccess(_msgSender());
         _requireAccess(from);
         _requireAccess(to);
+        // Screen the spender too, mirroring the block-list check on _msgSender() above:
+        // a sanctioned account must not move value even on another's behalf.
+        _requireNotSanctioned(_msgSender());
+        _requireNotSanctioned(from);
+        _requireNotSanctioned(to);
 
         return super.transferFrom(from, to, amount);
     }
@@ -307,6 +331,7 @@ contract CoboERC20Wrapper is
      */
     function deposit(uint256 value) public virtual whenNotPaused onlyRole(WRAPPER_ROLE) returns (bool) {
         address sender = _msgSender();
+        _requireNotSanctioned(sender);
         IERC20(_underlying).safeTransferFrom(sender, address(this), value);
         _mint(sender, value);
         emit Deposit(sender, value);
@@ -318,10 +343,47 @@ contract CoboERC20Wrapper is
      */
     function withdraw(uint256 value) public virtual whenNotPaused onlyRole(WRAPPER_ROLE) returns (bool) {
         address sender = _msgSender();
+        _requireNotSanctioned(sender);
         _burn(sender, value);
         IERC20(_underlying).safeTransfer(sender, value);
         emit Withdrawal(sender, value);
         return true;
+    }
+
+    /**
+     * @notice Set (or clear) the sanctions screening oracle.
+     *
+     * @dev Pass any contract implementing {ISanctionsOracle} (the concrete data source is a runtime
+     * configuration decision). Pass `address(0)` to disable screening (emergency fallback when the
+     * oracle is malfunctioning). A non-zero candidate is probed once at install time by calling
+     * {ISanctionsOracle-isSanctioned}; the call reverts if the candidate is an EOA or does not implement
+     * a callable `isSanctioned(address)`, so a mistyped or non-conforming address is rejected here rather
+     * than surfacing at the first screened transfer. The returned value is ignored; the probe verifies
+     * only that the interface is reachable. Whether the oracle's answers are correct cannot be checked
+     * on-chain and rests on the admin multisig and the operations runbook. Recover from a misbehaving
+     * oracle with `setSanctionsOracle(address(0))`.
+     *
+     * This oracle complements the {BlockList}: it is a dynamic external risk feed, while the BlockList
+     * remains the manual on-chain override. Both are enforced independently.
+     *
+     * Calling Conditions:
+     *
+     * - Only the "DEFAULT_ADMIN_ROLE" can execute. Installing, replacing, or clearing the oracle can
+     *   disable all screening at once, so it is gated at the highest privilege — above the MANAGER_ROLE
+     *   that maintains the AccessList/BlockList entries.
+     *
+     * This function emits a {SanctionsOracleUpdated} event.
+     *
+     * @param sanctionsOracle_ Address of the new sanctions oracle, or address(0) to disable screening.
+     */
+    function setSanctionsOracle(address sanctionsOracle_) external virtual onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (sanctionsOracle_ != address(0)) {
+            // Probe the candidate: reverts if it is an EOA or has no callable isSanctioned(address).
+            // The boolean result is ignored; the call only verifies the interface is reachable.
+            ISanctionsOracle(sanctionsOracle_).isSanctioned(address(this));
+        }
+        sanctionsOracle = ISanctionsOracle(sanctionsOracle_);
+        emit SanctionsOracleUpdated(sanctionsOracle_);
     }
 
     /**
@@ -448,8 +510,27 @@ contract CoboERC20Wrapper is
     }
 
     /**
+     * @notice This is a function that checks if the specified address is on the sanctions list.
+     *
+     * @dev Reverts with {AddressSanctioned} when the address is sanctioned. When `sanctionsOracle`
+     * is unset (address(0)), the check is bypassed — this is the emergency-disable path entered via
+     * `setSanctionsOracle(address(0))`. A reverting oracle propagates (fail-close on normal paths).
+     *
+     * @param account The address to check.
+     */
+    function _requireNotSanctioned(address account) internal view virtual {
+        ISanctionsOracle oracle = sanctionsOracle;
+        if (address(oracle) == address(0)) return;
+        if (oracle.isSanctioned(account)) revert LibErrors.AddressSanctioned(account);
+    }
+
+    /**
      * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake or acquired from
      * rebasing mechanisms. Internal function that can be exposed with access control if desired.
+     *
+     * Sanctions screening for this path is applied at the {mint} entry (the sole current caller), which
+     * screens `account`. If a future version exposes a new public path that reaches `_recover`, that
+     * entry MUST add its own {_requireNotSanctioned} — the recover itself is intentionally unscreened.
      */
     function _recover(address account) internal virtual returns (uint256) {
         uint256 value = IERC20(_underlying).balanceOf(address(this)) - totalSupply();
@@ -462,5 +543,6 @@ contract CoboERC20Wrapper is
     /// @dev This empty reserved space is put in place to allow future versions to add new
     ///      variables without shifting down storage in the inheritance chain.
     ///      See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[49] private __gap;
+    ///      Reduced from 49 to 48 slots when `sanctionsOracle` was added.
+    uint256[48] private __gap;
 }

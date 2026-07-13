@@ -8,7 +8,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ICoboFundOracle} from "../../src/Fund/CoboFundOracle.sol";
 import {ICoboFundToken} from "../../src/Fund/CoboFundVault.sol";
-import {ISanctionsOracle} from "../../src/Fund/interfaces/ISanctionsOracle.sol";
+import {ISanctionsOracle} from "../../src/interfaces/ISanctionsOracle.sol";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Malicious Mock Contracts

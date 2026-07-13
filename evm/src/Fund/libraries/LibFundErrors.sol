@@ -34,7 +34,6 @@ library LibFundErrors {
 
     // ──────────────────── Sanctions ──────────────────
     error AddressSanctioned(address account);
-    error InvalidSanctionsOracle(address oracle);
 
     // ──────────────────── AccessControl ─────────────
     error LastAdminCannotBeRevoked();

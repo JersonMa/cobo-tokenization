@@ -11,7 +11,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {LibFundErrors} from "./libraries/LibFundErrors.sol";
-import {ISanctionsOracle} from "./interfaces/ISanctionsOracle.sol";
+import {ISanctionsOracle} from "../interfaces/ISanctionsOracle.sol";
 
 /// @notice Minimal interface for FundToken consumers.
 interface ICoboFundToken {

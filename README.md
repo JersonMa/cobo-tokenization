@@ -13,11 +13,11 @@ A sophisticated, upgradeable ERC20 token implementation with role-based access c
 
 | Network         | Contract Address                                                               |
 |------------------|------------------------------------------------------------------------------|
-| Sepolia Testnet  | [`0xa3d7b4af8603b95a6faaf0758db4440871fc465c`](https://sepolia.etherscan.io/address/0xa3d7b4af8603b95a6faaf0758db4440871fc465c#code) |
-| Ethereum Mainnet | [`0x2da3BF4087703BFE4009F49E0B8d5602536F86a1`](https://etherscan.io/address/0x2da3BF4087703BFE4009F49E0B8d5602536F86a1#code) |
-| Base Network     | [`0x2da3bf4087703bfe4009f49e0b8d5602536f86a1`](https://basescan.org/address/0x2da3BF4087703BFE4009F49E0B8d5602536F86a1#code) |
-| BSC Network      | [`0x2da3BF4087703BFE4009F49E0B8d5602536F86a1`](https://bscscan.com/address/0x2da3BF4087703BFE4009F49E0B8d5602536F86a1#code) |
-| Arbitrum One Network      | [`0x2da3BF4087703BFE4009F49E0B8d5602536F86a1`](https://arbiscan.io/address/0x2da3BF4087703BFE4009F49E0B8d5602536F86a1#code) |
+| Sepolia Testnet  | [`0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c`](https://sepolia.etherscan.io/address/0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c#code) |
+| Ethereum Mainnet | [`0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c`](https://etherscan.io/address/0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c#code) |
+| Base Network     | [`0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c`](https://basescan.org/address/0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c#code) |
+| BSC Network      | [`0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c`](https://bscscan.com/address/0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c#code) |
+| Arbitrum One Network      | [`0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c`](https://arbiscan.io/address/0xA3d7b4Af8603B95A6fAaf0758Db4440871fC465c#code) |
 
 # Cobo Tokenization ERC20 Wrapper 
 
@@ -25,11 +25,11 @@ A sophisticated, upgradeable ERC20 token implementation with role-based access c
 
 | Network         | Contract Address                                                               |
 |------------------|------------------------------------------------------------------------------|
-| Sepolia Testnet  | [`0x162090e61445b8ca6b7cbbfb494c77d167e2f32b`](https://sepolia.etherscan.io/address/0x162090e61445b8ca6b7cbbfb494c77d167e2f32b#code) |
-| Ethereum Mainnet | [`0xaeD271103F86DB5624e69977227e30c3C00D8AEB`](https://etherscan.io/address/0xaeD271103F86DB5624e69977227e30c3C00D8AEB#code) |
-| Base Network     | [`0xaeD271103F86DB5624e69977227e30c3C00D8AEB`](https://basescan.org/address/0xaeD271103F86DB5624e69977227e30c3C00D8AEB#code) |
-| BSC Network      | [`0xaeD271103F86DB5624e69977227e30c3C00D8AEB`](https://bscscan.com/address/0xaeD271103F86DB5624e69977227e30c3C00D8AEB#code) |
-| Arbitrum One Network      | [`0xaeD271103F86DB5624e69977227e30c3C00D8AEB`](https://arbiscan.io/address/0xaeD271103F86DB5624e69977227e30c3C00D8AEB#code) |
+| Sepolia Testnet  | [`0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b`](https://sepolia.etherscan.io/address/0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b#code) |
+| Ethereum Mainnet | [`0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b`](https://etherscan.io/address/0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b#code) |
+| Base Network     | [`0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b`](https://basescan.org/address/0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b#code) |
+| BSC Network      | [`0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b`](https://bscscan.com/address/0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b#code) |
+| Arbitrum One Network      | [`0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b`](https://arbiscan.io/address/0x162090E61445B8Ca6B7CbbFb494C77D167e2F32b#code) |
 
 # Cobo Fund Tokenization
 
@@ -45,7 +45,7 @@ A NAV-based fund tokenization system that wraps real-world assets (e.g., gold, b
 
 | Sepolia Testnet Contract         | Address                                                               |
 |------------------|-----------------------------------------------------------------------|
-| Oracle Logic     | [`0x0CEc310611866849fe07759f3635EB8D39BbA8ea`](https://sepolia.etherscan.io/address/0x0CEc310611866849fe07759f3635EB8D39BbA8ea) |
+| Oracle Logic     | [`0xc0601667705F8C96c2e2F452E494bd5CC3b262BA`](https://sepolia.etherscan.io/address/0xc0601667705F8C96c2e2F452E494bd5CC3b262BA) |
 | FundToken Logic  | [`0xAc5021d88e8003D30CCE6b089A3982060907a917`](https://sepolia.etherscan.io/address/0xAc5021d88e8003D30CCE6b089A3982060907a917) |
 | Vault Logic      | [`0x7D89fD39EE0d40b3024814B8874df710f1edeA00`](https://sepolia.etherscan.io/address/0x7D89fD39EE0d40b3024814B8874df710f1edeA00) |
 
